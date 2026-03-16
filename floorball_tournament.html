@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Floorball Tournament</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117; --surf:#191c26; --surf2:#21263a;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.16);
+  --text:#e8eaf0; --muted:#7a8099;
+  --accent:#3de8a0; --accent2:#2bbf82;
+  --gold:#f5b731; --silver:#a0aec0; --bronze:#cd7f32;
+  --win:#3de8a0; --otw:#56b4ff; --otl:#ffb347; --loss:#ff6b6b;
+  --r:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;-webkit-text-size-adjust:100%;}
+
+/* ── Header ── */
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;gap:10px;}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--accent);white-space:nowrap;}
+.logo span{color:var(--text);}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .3s;}
+.sync-dot.ok{background:var(--accent);}.sync-dot.err{background:var(--loss);}
+.tabs{display:flex;gap:2px;}
+.tab{background:none;border:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:7px 11px;border-radius:var(--r);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tab.active{background:var(--surf2);color:var(--text);}.tab:hover:not(.active){color:var(--text);}
+
+/* Auth button in header */
+.auth-btn{background:none;border:1px solid var(--border2);border-radius:var(--r);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.auth-btn:hover{border-color:var(--accent);color:var(--accent);}
+.auth-btn.logged-in{border-color:rgba(61,232,160,0.3);color:var(--accent);}
+
+/* ── Layout ── */
+main{max-width:960px;margin:0 auto;padding:20px 14px 48px;}
+.page{display:none;}.page.active{display:block;}
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+
+/* ── Setup banner ── */
+#setup-banner{background:rgba(245,183,49,0.08);border:1px solid rgba(245,183,49,0.3);border-radius:10px;padding:16px 18px;margin-bottom:20px;display:none;line-height:1.8;}
+#setup-banner p{font-size:14px;color:var(--gold);}
+#setup-banner ol{margin:8px 0 0 18px;font-size:13px;color:var(--gold);}
+#setup-banner code{background:rgba(255,255,255,0.07);border-radius:4px;padding:1px 6px;font-size:12px;font-family:monospace;}
+
+/* ── Legend ── */
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+/* ── Leaderboard ── */
+.lb-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.lb-table{width:100%;border-collapse:collapse;min-width:480px;}
+.lb-table th{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:0 8px 10px;text-align:center;white-space:nowrap;}
+.lb-table th:nth-child(1){width:28px;text-align:left;padding-left:0;}
+.lb-table th:nth-child(2){text-align:left;}
+.lb-table td{padding:0 8px;text-align:center;font-size:13px;border-top:1px solid var(--border);height:48px;}
+.lb-table td:nth-child(1){text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;padding-left:0;}
+.lb-table td:nth-child(2){text-align:left;font-size:13px;font-weight:500;min-width:90px;}
+.lb-table tr:hover td{background:var(--surf2);}
+.r1{color:var(--gold)!important;}.r2{color:var(--silver)!important;}.r3{color:var(--bronze)!important;}
+.pts-big{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--accent);}
+.pill{display:inline-flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;white-space:nowrap;}
+.p-w  {background:rgba(61,232,160,0.12);color:var(--win);}
+.p-otw{background:rgba(86,180,255,0.12);color:var(--otw);}
+.p-otl{background:rgba(255,179,71,0.12); color:var(--otl);}
+.p-l  {background:rgba(255,107,107,0.12);color:var(--loss);}
+.gd-pos{color:var(--win);font-weight:500;}
+.gd-neg{color:var(--loss);font-weight:500;}
+
+/* ── Filter bar ── */
+.fixture-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.filt-btn{background:var(--surf2);border:1px solid var(--border2);border-radius:20px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 13px;cursor:pointer;transition:all .15s;}
+.filt-btn.active{border-color:var(--accent);color:var(--accent);}
+
+/* ── Fixture group ── */
+.fixture-group{margin-bottom:22px;}
+.fixture-group-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.fx-row{background:var(--surf);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;overflow:hidden;}
+.fx-inner{display:grid;grid-template-columns:1fr 100px 1fr 88px;align-items:center;min-height:54px;}
+.fx-player{padding:10px 14px;font-size:13px;font-weight:500;line-height:1.3;}
+.fx-player.home{text-align:right;}.fx-player.away{text-align:left;}
+.fx-player.winner{color:var(--accent);font-weight:600;}
+.fx-score{padding:8px 6px;text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.fx-score-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:1px;line-height:1;}
+.fx-score-tag{font-size:10px;color:var(--muted);margin-top:3px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:4px;}
+.fx-pending{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--border2);letter-spacing:3px;}
+.fx-actions{padding:0 8px;display:flex;gap:5px;align-items:center;justify-content:center;}
+.btn-sm{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--muted);font-size:11px;padding:5px 9px;cursor:pointer;transition:all .15s;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;line-height:1;}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm.del:hover{border-color:var(--loss);color:var(--loss);}
+.leg-tag{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 5px;border-radius:3px;background:var(--surf2);color:var(--muted);margin-bottom:3px;}
+
+/* Hide editor-only elements for viewers */
+.editor-only{display:none;}
+body.is-editor .editor-only{display:flex;}
+body.is-editor .editor-only.inline{display:inline-flex;}
+
+/* Players page locked hint */
+.locked-hint{font-size:12px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+body.is-editor .locked-hint{display:none;}
+
+/* ── Modal (shared for result + login) ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0;}
+@media(min-width:541px){.modal-bg{align-items:center;padding:20px;}}
+.modal{background:var(--surf);border:1px solid var(--border2);width:100%;max-width:460px;position:relative;border-radius:16px 16px 0 0;padding:24px 20px 32px;max-height:92vh;overflow-y:auto;}
+@media(min-width:541px){.modal{border-radius:14px;padding:26px 26px 28px;}}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px;}
+@media(min-width:541px){.modal-handle{display:none;}}
+.modal h2{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:800;margin-bottom:4px;letter-spacing:.5px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+.modal-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:4px;}
+.modal-close:hover{color:var(--text);}
+.form-row{display:flex;gap:10px;align-items:end;margin-bottom:14px;}
+.form-col{display:flex;flex-direction:column;gap:6px;flex:1;}
+label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+input[type=number]{background:var(--surf2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:'Barlow',sans-serif;font-size:22px;font-weight:600;padding:10px 13px;width:100%;text-align:center;transition:border-color .15s;-moz-appearance:textfield;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+input[type=number]:focus{outline:none;border-color:var(--accent);}
+input[type=email],input[type=password]{background:var(--surf2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:'Barlow',sans-serif;font-size:15px;padding:11px 14px;width:100%;transition:border-color .15s;}
+input[type=email]:focus,input[type=password]:focus{outline:none;border-color:var(--accent);}
+.vs-sep{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--muted);padding-bottom:9px;text-align:center;flex-shrink:0;}
+.toggle-row{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surf2);border-radius:var(--r);margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.toggle-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+.toggle-row label{font-size:14px;letter-spacing:0;text-transform:none;color:var(--text);cursor:pointer;font-family:'Barlow',sans-serif;line-height:1.3;}
+.toggle-row label small{display:block;font-size:11px;color:var(--muted);margin-top:2px;}
+.toggle-row.disabled{opacity:.4;pointer-events:none;}
+.result-prev{background:var(--surf2);border-radius:var(--r);padding:11px 14px;margin-bottom:16px;font-size:13px;color:var(--muted);min-height:44px;line-height:1.7;}
+.result-prev strong{color:var(--text);}
+.modal-err{font-size:12px;color:var(--loss);margin-bottom:10px;display:none;padding:8px 12px;background:rgba(255,107,107,0.07);border-radius:var(--r);}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;}
+.btn-primary{background:var(--accent);color:#0a1a12;border:none;border-radius:var(--r);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:11px 24px;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-primary:disabled{background:var(--surf2);color:var(--muted);cursor:not-allowed;}
+.btn-ghost{background:none;border:1px solid var(--border2);border-radius:var(--r);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:11px 18px;cursor:pointer;transition:all .15s;}
+.btn-ghost:hover{color:var(--text);}
+
+/* Login modal specifics */
+#login-modal .form-col{margin-bottom:4px;}
+.login-info{font-size:12px;color:var(--muted);margin-bottom:18px;padding:10px 13px;background:var(--surf2);border-radius:var(--r);line-height:1.6;}
+
+/* ── Players ── */
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;}
+.player-card{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:11px;}
+.p-av{width:36px;height:36px;border-radius:50%;background:var(--surf2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;}
+.p-inp{font-size:13px;font-weight:500;background:none;border:none;color:var(--text);font-family:'Barlow',sans-serif;width:100%;padding:0;min-width:0;}
+.p-inp[readonly]{cursor:default;color:var(--muted);}
+.p-inp:not([readonly]){cursor:pointer;}
+.p-inp:focus{outline:1px solid var(--accent);border-radius:4px;padding:2px 5px;background:var(--surf2);}
+
+/* ── Loader / Toast / Empty ── */
+#loader{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+.spin{width:30px;height:30px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surf);border:1px solid var(--border2);border-radius:10px;padding:10px 18px;font-size:13px;color:var(--accent);display:none;z-index:999;white-space:nowrap;}
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:.35;}
+
+@media(max-width:540px){
+  .fx-inner{grid-template-columns:1fr 80px 1fr;grid-template-rows:auto auto;}
+  .fx-actions{grid-column:1/-1;border-top:1px solid var(--border);padding:8px;justify-content:center;background:var(--surf2);}
+  .fx-score{border-right:none;}
+}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="spin"></div><span style="color:var(--muted);font-size:13px">Connecting…</span></div>
+
+<header>
+  <div style="display:flex;align-items:center;gap:9px;">
+    <div class="logo">Floor<span>ball</span></div>
+    <div class="sync-dot" id="sync-dot"></div>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" onclick="showPage('standings')">Standings</button>
+    <button class="tab"        onclick="showPage('fixtures')">Fixtures</button>
+    <button class="tab"        onclick="showPage('players')">Players</button>
+  </nav>
+  <div class="header-right">
+    <button class="auth-btn" id="auth-btn" onclick="handleAuthBtn()">Log in</button>
+  </div>
+</header>
+
+<main>
+  <div id="setup-banner">
+    <p><strong>⚙️ Firebase not configured.</strong></p>
+    <ol>
+      <li>Firebase console → <strong>Realtime Database</strong> → Create database (test mode)</li>
+      <li>Firebase console → <strong>Authentication</strong> → Sign-in method → enable <strong>Email/Password</strong></li>
+      <li>Authentication → Users → Add user → set your admin email + password</li>
+      <li>Project Settings → Your apps → Add web app → copy config into <code>FIREBASE_CONFIG</code> below</li>
+      <li>Database rules: <code>{ "rules": { ".read": true, ".write": "auth != null" } }</code></li>
+    </ol>
+  </div>
+
+  <!-- STANDINGS -->
+  <div id="page-standings" class="page active">
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--win)"></div>Win – 3pts</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--otw)"></div>OT/Pen win – 2pts</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--otl)"></div>OT/Pen loss – 1pt</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--loss)"></div>Loss – 0pts</div>
+    </div>
+    <div class="lb-wrap"><div id="lb-content"></div></div>
+  </div>
+
+  <!-- FIXTURES -->
+  <div id="page-fixtures" class="page">
+    <div class="fixture-filters">
+      <button class="filt-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filt-btn"        onclick="setFilter('pending',this)">Pending</button>
+      <button class="filt-btn"        onclick="setFilter('played',this)">Played</button>
+    </div>
+    <div id="fixture-list"></div>
+  </div>
+
+  <!-- PLAYERS -->
+  <div id="page-players" class="page">
+    <div class="locked-hint">🔒 Log in as editor to rename players</div>
+    <div class="sec-title" style="margin-bottom:14px">Player names</div>
+    <div class="player-grid" id="player-grid"></div>
+  </div>
+</main>
+
+<!-- ── RESULT MODAL ── -->
+<div class="modal-bg" id="result-modal" style="display:none" onclick="bgClose('result-modal',event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('result-modal')">✕</button>
+    <h2 id="modal-title">Result</h2>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="form-row">
+      <div class="form-col">
+        <label id="lbl-h">Home</label>
+        <input type="number" id="g-home" min="0" max="99" placeholder="0" inputmode="numeric" oninput="updatePreview()">
+      </div>
+      <div class="vs-sep">–</div>
+      <div class="form-col">
+        <label id="lbl-a">Away</label>
+        <input type="number" id="g-away" min="0" max="99" placeholder="0" inputmode="numeric" oninput="updatePreview()">
+      </div>
+    </div>
+    <div class="toggle-row" id="ot-row" onclick="toggleCheck('ot-chk')">
+      <input type="checkbox" id="ot-chk" onclick="event.stopPropagation()" onchange="updatePreview()">
+      <label for="ot-chk" onclick="event.preventDefault()">Match went to overtime (OT)
+        <small>Goals count for GF · GA · GD</small></label>
+    </div>
+    <div class="toggle-row" id="pen-row" onclick="toggleCheck('pen-chk')">
+      <input type="checkbox" id="pen-chk" onclick="event.stopPropagation()" onchange="updatePreview()">
+      <label for="pen-chk" onclick="event.preventDefault()">OT still level — decided by penalties
+        <small>Penalty goal shown in score but NOT in GF · GA · GD</small></label>
+    </div>
+    <div class="result-prev" id="result-prev">Enter goals above to preview point assignment.</div>
+    <div class="modal-err"  id="modal-err">A draw is only valid when both OT and Penalties are selected.</div>
+    <div class="modal-footer">
+      <button class="btn-ghost"   onclick="closeModal('result-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveResult()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── LOGIN MODAL ── -->
+<div class="modal-bg" id="login-modal" style="display:none" onclick="bgClose('login-modal',event)">
+  <div class="modal" id="login-modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('login-modal')">✕</button>
+    <h2>Editor login</h2>
+    <div class="modal-sub">Standings and fixtures are always public. Login unlocks editing.</div>
+    <div class="login-info">Your credentials are verified by Firebase — they are never stored in this file.</div>
+    <div class="form-col" style="margin-bottom:12px">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@example.com" autocomplete="username">
+    </div>
+    <div class="form-col" style="margin-bottom:18px">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="modal-err" id="login-err"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost"   onclick="closeModal('login-modal')">Cancel</button>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">Log in</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════ FIREBASE ════════════════════════════════ -->
+<script type="module">
+import { initializeApp }                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, update }               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, signOut,
+         onAuthStateChanged }                                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  PASTE YOUR FIREBASE CONFIG HERE                    ║
+// ╚══════════════════════════════════════════════════════╝
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCQ_BlMd75flfMTB-hZmg5STpsDzFvmg4U",
+  authDomain: "campionato-67da2.firebaseapp.com",
+  databaseURL: "https://campionato-67da2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "campionato-67da2",
+  storageBucket: "campionato-67da2.firebasestorage.app",
+  messagingSenderId: "915471671303",
+  appId: "1:915471671303:web:1f1d0899f4a0c0f1de4aa2"
+};
+// ──────────────────────────────────────────────────────
+
+const CONFIGURED = !FIREBASE_CONFIG.apiKey.startsWith("REPLACE");
+const POINTS = { W:3, OTW:2, OTL:1, L:0 };
+
+let DB, AUTH, dbRef;
+let state   = { players: Array.from({length:12},(_,i)=>`Player ${i+1}`), fixtures:{} };
+let filter  = 'all';
+let mCtx    = null;
+let isEditor = false;
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+function boot(){
+  if(!CONFIGURED){
+    document.getElementById('setup-banner').style.display='block';
+    document.getElementById('loader').style.display='none';
+    renderAll(); return;
+  }
+  try{
+    const app = initializeApp(FIREBASE_CONFIG);
+    DB   = getDatabase(app);
+    AUTH = getAuth(app);
+    dbRef = ref(DB,'tournament');
+
+    // Auth state listener
+    onAuthStateChanged(AUTH, user=>{
+      isEditor = !!user;
+      document.body.classList.toggle('is-editor', isEditor);
+      const btn = document.getElementById('auth-btn');
+      if(isEditor){
+        btn.textContent = '✓ Editor';
+        btn.classList.add('logged-in');
+      } else {
+        btn.textContent = 'Log in';
+        btn.classList.remove('logged-in');
+      }
+      renderAll();
+    });
+
+    // Data listener
+    onValue(dbRef, snap=>{
+      const d=snap.val();
+      if(d){ if(d.players) state.players=d.players; state.fixtures=d.fixtures||{}; }
+      else  set(dbRef,{players:state.players,fixtures:{}});
+      dot(true);
+      document.getElementById('loader').style.display='none';
+      renderAll();
+    }, e=>{ dot(false); document.getElementById('loader').style.display='none'; toast('Firebase: '+e.message); });
+  }catch(e){
+    dot(false);
+    document.getElementById('loader').style.display='none';
+    document.getElementById('setup-banner').style.display='block';
+    renderAll();
+  }
+}
+
+function dot(ok){ document.getElementById('sync-dot').className='sync-dot '+(ok?'ok':'err'); }
+function push(path,val){ if(!DB||!isEditor) return; const u={}; u[path]=val; update(dbRef,u); }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+window.handleAuthBtn=function(){
+  if(isEditor){ signOut(AUTH); toast('Logged out'); }
+  else { openLoginModal(); }
+};
+
+function openLoginModal(){
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-err').style.display='none';
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-modal').style.display='flex';
+  setTimeout(()=>document.getElementById('login-email').focus(),100);
+}
+
+window.doLogin=async function(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass =document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-err');
+  const btn  =document.getElementById('login-btn');
+  if(!email||!pass){ errEl.textContent='Enter email and password.'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='Logging in…';
+  try{
+    await signInWithEmailAndPassword(AUTH,email,pass);
+    closeModal('login-modal');
+    toast('Logged in as editor ✓');
+  }catch(e){
+    const msg = e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
+      ? 'Incorrect email or password.' : 'Login failed: '+e.message;
+    errEl.textContent=msg; errEl.style.display='block';
+    btn.disabled=false; btn.textContent='Log in';
+  }
+};
+
+// ── Fixture helpers ────────────────────────────────────────────────────────────
+function fxKey(i,j,leg){ const a=Math.min(i,j),b=Math.max(i,j); return `${a}_${b}_${leg}`; }
+function allFx(n){
+  const out=[];
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    out.push({key:fxKey(i,j,1),homeIdx:i,awayIdx:j,leg:1});
+    out.push({key:fxKey(i,j,2),homeIdx:j,awayIdx:i,leg:2});
+  }
+  return out;
+}
+
+function getRes(d){
+  if(!d||!d.played) return null;
+  if(d.hg>d.ag) return {hr:d.ot?'OTW':'W', ar:d.ot?'OTL':'L'};
+  if(d.ag>d.hg) return {hr:d.ot?'OTL':'L', ar:d.ot?'OTW':'W'};
+  return null;
+}
+
+function statsGoals(d){
+  let hg=d.hg, ag=d.ag;
+  if(d.pen){ if(hg>ag) hg--; else ag--; }
+  return {hgS:hg, agS:ag};
+}
+
+// ── Standings ─────────────────────────────────────────────────────────────────
+function renderStandings(){
+  const stats=state.players.map((name,i)=>({i,name,gp:0,pts:0,w:0,otw:0,otl:0,l:0,gf:0,ga:0}));
+  for(const fx of allFx(state.players.length)){
+    const d=state.fixtures[fx.key];
+    if(!d||!d.played) continue;
+    const r=getRes(d); if(!r) continue;
+    const h=stats[fx.homeIdx], a=stats[fx.awayIdx];
+    h.gp++; a.gp++;
+    h.pts+=POINTS[r.hr]; a.pts+=POINTS[r.ar];
+    h[r.hr.toLowerCase()]++; a[r.ar.toLowerCase()]++;
+    const {hgS,agS}=statsGoals(d);
+    h.gf+=hgS; h.ga+=agS; a.gf+=agS; a.ga+=hgS;
+  }
+  stats.forEach(s=>s.gd=s.gf-s.ga);
+  stats.sort((a,b)=>b.pts!==a.pts?b.pts-a.pts:b.gd!==a.gd?b.gd-a.gd:b.gf-a.gf);
+  const el=document.getElementById('lb-content');
+  if(!stats.some(s=>s.gp>0)){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🏒</div><p>No results yet — go to Fixtures!</p></div>`;
+    return;
+  }
+  el.innerHTML=`<table class="lb-table"><thead><tr>
+    <th>#</th><th>Player</th>
+    <th title="Games played">GP</th>
+    <th title="Wins">W</th><th title="OT/Pen wins">OTW</th><th title="OT/Pen losses">OTL</th><th title="Losses">L</th>
+    <th title="Goals for">GF</th><th title="Goals against">GA</th><th title="Goal difference">GD</th>
+    <th>Pts</th>
+  </tr></thead><tbody>
+  ${stats.map((s,r)=>`<tr>
+    <td class="${r<3?['r1','r2','r3'][r]:''}">${r+1}</td>
+    <td>${x(s.name)}</td>
+    <td style="color:var(--muted)">${s.gp}</td>
+    <td>${s.w  >0?`<span class="pill p-w">${s.w}</span>`  :s.gp>0?`<span style="color:var(--muted)">0</span>`:''}</td>
+    <td>${s.otw>0?`<span class="pill p-otw">${s.otw}</span>`:s.gp>0?`<span style="color:var(--muted)">0</span>`:''}</td>
+    <td>${s.otl>0?`<span class="pill p-otl">${s.otl}</span>`:s.gp>0?`<span style="color:var(--muted)">0</span>`:''}</td>
+    <td>${s.l  >0?`<span class="pill p-l">${s.l}</span>`  :s.gp>0?`<span style="color:var(--muted)">0</span>`:''}</td>
+    <td style="font-weight:500">${s.gf}</td>
+    <td style="color:var(--muted)">${s.ga}</td>
+    <td class="${s.gd>0?'gd-pos':s.gd<0?'gd-neg':''}">${s.gd>0?'+':''}${s.gd}</td>
+    <td class="pts-big">${s.pts}</td>
+  </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ── Fixtures ──────────────────────────────────────────────────────────────────
+function renderFixtures(){
+  const list=document.getElementById('fixture-list');
+  const fxs=allFx(state.players.length);
+  const groups={};
+  for(const fx of fxs){
+    const a=Math.min(fx.homeIdx,fx.awayIdx),b=Math.max(fx.homeIdx,fx.awayIdx);
+    const gk=`${a}_${b}`;
+    if(!groups[gk]) groups[gk]={a,b,legs:[]};
+    groups[gk].legs.push(fx);
+  }
+  let html='',shown=0;
+  for(const gk of Object.keys(groups)){
+    const g=groups[gk]; let lh='';
+    for(const fx of g.legs){
+      const d=state.fixtures[fx.key];
+      const played=d&&d.played;
+      if(filter==='pending'&&played) continue;
+      if(filter==='played'&&!played) continue;
+      let scoreHtml, hCls='fx-player home', aCls='fx-player away';
+      if(played){
+        const r=getRes(d);
+        if(r){ if(r.hr==='W'||r.hr==='OTW') hCls+=' winner'; else aCls+=' winner'; }
+        const tag=d.pen?'P':d.ot?'OT':'FT';
+        const pillR=r?r.hr:'';
+        scoreHtml=`<div class="fx-score">
+          <div class="fx-score-val">${d.hg}<span style="color:var(--muted);font-size:14px"> – </span>${d.ag}</div>
+          <div class="fx-score-tag">${tag}${pillR?` <span class="pill p-${pillR.toLowerCase()}" style="font-size:9px">${pillR}</span>`:''}</div>
+        </div>`;
+      } else {
+        scoreHtml=`<div class="fx-score"><div class="fx-pending">· · ·</div></div>`;
+      }
+      // Editor actions — hidden via CSS for non-editors
+      const actions=`<div class="fx-actions editor-only">
+        <button class="btn-sm" onclick="openModal('${fx.key}',${fx.homeIdx},${fx.awayIdx},${fx.leg})">${played?'Edit':'Enter'}</button>
+        ${played?`<button class="btn-sm del" onclick="clearFx('${fx.key}')">✕</button>`:''}
+      </div>
+      <div class="fx-actions" id="fx-noauth-${fx.key}" style="${isEditor?'display:none':''}">
+        <span style="font-size:11px;color:var(--muted);padding:0 10px">🔒</span>
+      </div>`;
+      lh+=`<div class="fx-row"><div class="fx-inner">
+        <div class="${hCls}"><div class="leg-tag">Leg ${fx.leg}</div><div>${x(state.players[fx.homeIdx])}</div></div>
+        ${scoreHtml}
+        <div class="${aCls}"><div>${x(state.players[fx.awayIdx])}</div></div>
+        ${actions}
+      </div></div>`;
+      shown++;
+    }
+    if(lh){
+      html+=`<div class="fixture-group">
+        <div class="fixture-group-title">${x(state.players[g.a])} vs ${x(state.players[g.b])}</div>${lh}
+      </div>`;
+    }
+  }
+  list.innerHTML=shown?html:`<div class="empty"><div class="empty-icon">📋</div><p>No ${filter==='all'?'':filter+' '}fixtures.</p></div>`;
+}
+
+window.setFilter=function(f,btn){
+  filter=f;
+  document.querySelectorAll('.filt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFixtures();
+};
+
+// ── Result modal ──────────────────────────────────────────────────────────────
+window.openModal=function(key,hi,ai,leg){
+  if(!isEditor){ openLoginModal(); return; }
+  mCtx={key,hi,ai,leg};
+  document.getElementById('modal-title').textContent=`Leg ${leg}`;
+  document.getElementById('modal-sub').textContent=`${state.players[hi]} (home)  ·  ${state.players[ai]} (away)`;
+  document.getElementById('lbl-h').textContent=state.players[hi];
+  document.getElementById('lbl-a').textContent=state.players[ai];
+  const d=state.fixtures[key];
+  document.getElementById('g-home').value  =d&&d.played?d.hg:'';
+  document.getElementById('g-away').value  =d&&d.played?d.ag:'';
+  document.getElementById('ot-chk').checked=!!(d&&d.played&&d.ot);
+  document.getElementById('pen-chk').checked=!!(d&&d.played&&d.pen);
+  document.getElementById('modal-err').style.display='none';
+  document.getElementById('result-modal').style.display='flex';
+  updatePreview();
+  document.getElementById('g-home').focus();
+};
+
+window.bgClose=function(id,e){ if(e.target===document.getElementById(id)) closeModal(id); };
+window.closeModal=function(id){ document.getElementById(id).style.display='none'; if(id==='result-modal') mCtx=null; };
+window.toggleCheck=function(id){ const el=document.getElementById(id); if(el.disabled) return; el.checked=!el.checked; updatePreview(); };
+
+window.updatePreview=function(){
+  const h=parseInt(document.getElementById('g-home').value);
+  const a=parseInt(document.getElementById('g-away').value);
+  const ot=document.getElementById('ot-chk').checked;
+  const pen=document.getElementById('pen-chk').checked;
+  const prev=document.getElementById('result-prev');
+  document.getElementById('pen-row').classList.toggle('disabled',!ot);
+  if(!ot) document.getElementById('pen-chk').checked=false;
+  if(isNaN(h)||isNaN(a)){ prev.textContent='Enter goals above to preview point assignment.'; return; }
+  if(h===a&&!(ot&&pen)){ prev.innerHTML=`<span style="color:var(--loss)">Draw — only valid with OT + Penalties.</span>`; return; }
+  if(h===a&&ot&&pen){ prev.innerHTML=`<span style="color:var(--otl)">Score level after OT — enter the final score <em>including</em> the penalty goal (e.g. 3–2). Penalty goal will NOT count in GF/GA.</span>`; return; }
+  const isOT=ot||pen;
+  const hr=h>a?(isOT?'OTW':'W'):(isOT?'OTL':'L');
+  const ar=h>a?(isOT?'OTL':'L'):(isOT?'OTW':'W');
+  const tag=pen?'P':ot?'OT':'FT';
+  const hn=mCtx?x(state.players[mCtx.hi]):'Home', an=mCtx?x(state.players[mCtx.ai]):'Away';
+  let hgS=h,agS=a; if(pen){ if(h>a) hgS--; else agS--; }
+  const statNote=pen?` <span style="color:var(--muted);font-size:11px">(GF/GA: ${hgS}–${agS})</span>`:'';
+  prev.innerHTML=`<strong>${hn}</strong> ${h}–${a} <strong>${an}</strong> <span style="color:var(--muted);font-size:11px">${tag}</span>${statNote}<br>
+    <span class="pill p-${hr.toLowerCase()}">${hr} · ${POINTS[hr]}pt</span> &nbsp;
+    <span class="pill p-${ar.toLowerCase()}">${ar} · ${POINTS[ar]}pt</span>`;
+  document.getElementById('modal-err').style.display='none';
+};
+
+window.saveResult=function(){
+  if(!mCtx||!isEditor) return;
+  const h=parseInt(document.getElementById('g-home').value);
+  const a=parseInt(document.getElementById('g-away').value);
+  const ot=document.getElementById('ot-chk').checked;
+  const pen=document.getElementById('pen-chk').checked;
+  if(isNaN(h)||isNaN(a)||h<0||a<0||h===a){
+    document.getElementById('modal-err').style.display='block'; return;
+  }
+  const fxData={hg:h,ag:a,ot:ot||pen,pen:pen,played:true,ts:Date.now()};
+  state.fixtures[mCtx.key]=fxData;
+  push(`fixtures/${mCtx.key}`,fxData);
+  closeModal('result-modal');
+  renderAll();
+  toast('Result saved ✓');
+};
+
+window.clearFx=function(key){
+  if(!isEditor) return;
+  if(!confirm('Clear this result?')) return;
+  state.fixtures[key]={played:false};
+  push(`fixtures/${key}`,{played:false});
+  renderFixtures(); renderStandings();
+  toast('Result cleared');
+};
+
+// ── Players ───────────────────────────────────────────────────────────────────
+function renderPlayers(){
+  document.getElementById('player-grid').innerHTML=state.players.map((name,i)=>{
+    const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="player-card">
+      <div class="p-av">${x(initials)}</div>
+      <input class="p-inp" value="${x(name)}" maxlength="24"
+        ${isEditor?'':'readonly tabindex="-1"'}
+        onblur="renameP(${i},this.value)"
+        onkeydown="if(event.key==='Enter')this.blur()">
+    </div>`;
+  }).join('');
+}
+
+window.renameP=function(i,val){
+  if(!isEditor) return;
+  const v=val.trim();
+  if(!v||v===state.players[i]) return;
+  state.players[i]=v;
+  push(`players/${i}`,v);
+  renderAll();
+  toast('Name updated');
+};
+
+// ── Routing ───────────────────────────────────────────────────────────────────
+window.showPage=function(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.tab')[{standings:0,fixtures:1,players:2}[id]]?.classList.add('active');
+};
+
+function renderAll(){ renderStandings(); renderFixtures(); renderPlayers(); }
+function x(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+let tT;
+window.toast=function(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.display='block';
+  clearTimeout(tT); tT=setTimeout(()=>el.style.display='none',2600);
+};
+
+boot();
+</script>
+</body>
+</html>

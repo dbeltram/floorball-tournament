@@ -150,6 +150,7 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--accent);}
 .p-av{width:36px;height:36px;border-radius:50%;background:var(--surf2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;color:var(--accent);flex-shrink:0;}
 .p-inp{font-size:15px;font-weight:500;background:none;border:none;color:var(--text);font-family:'Barlow',sans-serif;width:100%;padding:0;min-width:0;}
 .p-inp[readonly]{cursor:default;}
+body.is-editor .p-inp[readonly]{cursor:pointer;}
 .p-inp:not([readonly]){cursor:text;}
 .p-inp:focus{outline:1px solid var(--accent);border-radius:4px;padding:2px 5px;background:var(--surf2);}
 .btn-edit{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--muted);font-size:12px;padding:4px 10px;cursor:pointer;transition:all .15s;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;line-height:1;flex-shrink:0;}
@@ -288,6 +289,20 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--accent);}
     <div class="modal-footer">
       <button class="btn-ghost"   onclick="closeModal('login-modal')">Cancel</button>
       <button class="btn-primary" id="login-btn" onclick="doLogin()">Log in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="modal-bg" id="confirm-modal" style="display:none" onclick="bgClose('confirm-modal',event)">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-msg">
+    <div class="modal-handle" aria-hidden="true"></div>
+    <button class="modal-close" aria-label="Close" onclick="resolveConfirm(false)">✕</button>
+    <h2 id="confirm-title">Confirm</h2>
+    <div id="confirm-msg" style="font-size:15px;color:var(--muted);margin-bottom:20px;line-height:1.6;"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="resolveConfirm(false)">Cancel</button>
+      <button class="btn-primary" id="confirm-ok" onclick="resolveConfirm(true)">Remove</button>
     </div>
   </div>
 </div>
@@ -577,15 +592,37 @@ window.openModal=function(key,hi,ai,leg){
   document.getElementById('g-home').focus();
 };
 
-window.bgClose=function(id,e){ if(e.target===document.getElementById(id)) closeModal(id); };
+window.bgClose=function(id,e){
+  if(e.target!==document.getElementById(id)) return;
+  if(id==='confirm-modal') resolveConfirm(false);
+  else closeModal(id);
+};
 window.closeModal=function(id){ document.getElementById(id).style.display='none'; if(id==='result-modal') mCtx=null; };
 window.toggleCheck=function(id){ const el=document.getElementById(id); if(el.disabled) return; el.checked=!el.checked; updatePreview(); };
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
-    if(document.getElementById('result-modal').style.display!=='none') closeModal('result-modal');
+    if(document.getElementById('confirm-modal').style.display!=='none') resolveConfirm(false);
+    else if(document.getElementById('result-modal').style.display!=='none') closeModal('result-modal');
     else if(document.getElementById('login-modal').style.display!=='none') closeModal('login-modal');
   }
 });
+
+let _confirmResolve=null;
+function appConfirm(title,msg,okLabel){
+  return new Promise(resolve=>{
+    _confirmResolve=resolve;
+    document.getElementById('confirm-title').textContent=title;
+    document.getElementById('confirm-msg').innerHTML=msg;
+    const okBtn=document.getElementById('confirm-ok');
+    okBtn.textContent=okLabel||'OK';
+    document.getElementById('confirm-modal').style.display='flex';
+    okBtn.focus();
+  });
+}
+window.resolveConfirm=function(val){
+  document.getElementById('confirm-modal').style.display='none';
+  if(_confirmResolve){ _confirmResolve(val); _confirmResolve=null; }
+};
 
 window.updatePreview=function(){
   const h=parseInt(document.getElementById('g-home').value);
@@ -628,9 +665,10 @@ window.saveResult=function(){
   toast('Result saved ✓');
 };
 
-window.clearFx=function(key){
+window.clearFx=async function(key){
   if(!isEditor) return;
-  if(!confirm('Clear this result?')) return;
+  const ok=await appConfirm('Clear result','Are you sure you want to clear this result?','Clear');
+  if(!ok) return;
   state.fixtures[key]={played:false};
   push(`fixtures/${key}`,{played:false});
   renderFixtures(); renderStandings();
@@ -644,10 +682,11 @@ function renderPlayers(){
     const name=state.players[id];
     const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     return `<div class="player-card">
-      <div class="p-av" aria-hidden="true">${x(initials)}</div>
+      <div class="p-av" aria-hidden="true" ${isEditor?`style="cursor:pointer" onclick="startEdit(${id})"`:''}>${x(initials)}</div>
       <input class="p-inp" id="p-inp-${id}" value="${x(name)}" maxlength="24" readonly
         aria-label="Player name: ${x(name)}"
         ${isEditor?'':'tabindex="-1"'}
+        ${isEditor?`onclick="startEdit(${id})"`:''}
         onblur="finishEdit(${id},this.value)"
         onkeydown="if(event.key==='Enter')this.blur()">
       ${isEditor?`<button class="btn-edit editor-only inline" id="p-edit-${id}" onclick="startEdit(${id})" aria-label="Edit ${x(name)}">Edit</button>`:''}
@@ -694,7 +733,7 @@ window.addPlayer=function(){
   toast('Player added');
 };
 
-window.removePlayer=function(id){
+window.removePlayer=async function(id){
   if(!isEditor) return;
   if(playerIds().length<=2){ toast('Minimum 2 players required'); return; }
   const name=state.players[id];
@@ -702,9 +741,10 @@ window.removePlayer=function(id){
     const p=key.split('_'); return parseInt(p[0])===id||parseInt(p[1])===id;
   });
   const playedCount=affectedKeys.filter(k=>state.fixtures[k]&&state.fixtures[k].played).length;
-  let msg=`Remove "${name}"?`;
-  if(playedCount>0) msg+=`\n\n${playedCount} played fixture(s) involving this player will be deleted. This will affect opponents' stats.`;
-  if(!confirm(msg)) return;
+  let msg=`Are you sure you want to remove <strong>${x(name)}</strong>?`;
+  if(playedCount>0) msg+=`<br><br>${playedCount} played fixture(s) involving this player will be deleted. This will affect opponents' stats.`;
+  const ok=await appConfirm('Remove player',msg,'Remove');
+  if(!ok) return;
   const updates={};
   updates[`players/${id}`]=null;
   affectedKeys.forEach(k=>{ updates[`fixtures/${k}`]=null; });

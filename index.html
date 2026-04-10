@@ -460,7 +460,10 @@ function renderStandings(){
   }
   const stats=Object.values(sm);
   stats.forEach(s=>s.gd=s.gf-s.ga);
-  stats.sort((a,b)=>b.pts!==a.pts?b.pts-a.pts:b.gd!==a.gd?b.gd-a.gd:b.gf-a.gf);
+  stats.sort((a,b)=>{
+    if((a.gp===0)!==(b.gp===0)) return a.gp===0?1:-1;
+    return b.pts!==a.pts?b.pts-a.pts:b.gd!==a.gd?b.gd-a.gd:b.gf-a.gf;
+  });
   const el=document.getElementById('lb-content');
   if(!stats.some(s=>s.gp>0)){
     el.innerHTML=`<div class="empty"><div class="empty-icon">🏒</div><p>No results yet — go to Fixtures!</p></div>`;

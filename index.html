@@ -34,7 +34,9 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:0 16
 /* Auth button in header */
 .auth-btn{background:none;border:1px solid var(--border2);border-radius:var(--r);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
 .auth-btn:hover{border-color:var(--accent);color:var(--accent);}
-.auth-btn.logged-in{border-color:rgba(15,153,96,0.4);color:var(--accent);}
+.auth-badge{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--accent);white-space:nowrap;}
+.auth-logout{font-size:13px!important;padding:5px 10px!important;opacity:0.7;}
+.auth-logout:hover{opacity:1;}
 
 /* ── Layout ── */
 main{max-width:960px;margin:0 auto;padding:20px 14px 48px;}
@@ -185,7 +187,7 @@ body.is-editor .p-inp[readonly]{cursor:pointer;}
     <button class="tab"        role="tab" aria-selected="false" aria-controls="page-fixtures" onclick="showPage('fixtures')">Fixtures</button>
     <button class="tab"        role="tab" aria-selected="false" aria-controls="page-players" onclick="showPage('players')">Players</button>
   </nav>
-  <div class="header-right">
+  <div class="header-right" id="auth-area">
     <button class="auth-btn" id="auth-btn" onclick="handleAuthBtn()">Log in</button>
   </div>
 </header>
@@ -362,13 +364,11 @@ function boot(){
     onAuthStateChanged(AUTH, user=>{
       isEditor = !!user;
       document.body.classList.toggle('is-editor', isEditor);
-      const btn = document.getElementById('auth-btn');
+      const area = document.getElementById('auth-area');
       if(isEditor){
-        btn.textContent = '✓ Editor';
-        btn.classList.add('logged-in');
+        area.innerHTML=`<span class="auth-badge">✓ Editor</span><button class="auth-btn auth-logout" onclick="handleAuthBtn()">Log out</button>`;
       } else {
-        btn.textContent = 'Log in';
-        btn.classList.remove('logged-in');
+        area.innerHTML=`<button class="auth-btn" id="auth-btn" onclick="handleAuthBtn()">Log in</button>`;
       }
       renderAll();
     });
@@ -690,7 +690,7 @@ function renderPlayers(){
         ${isEditor?'':'tabindex="-1"'}
         ${isEditor?`onclick="startEdit(${id})"`:''}
         onblur="finishEdit(${id},this.value)"
-        onkeydown="if(event.key==='Enter')this.blur()">
+        onkeydown="handleEditKey(event,${id})">
       ${isEditor?`<button class="btn-edit editor-only inline" id="p-edit-${id}" onclick="startEdit(${id})" aria-label="Edit ${x(name)}">Edit</button>`:''}
       ${isEditor?`<button class="btn-sm del editor-only inline" onclick="removePlayer(${id})" aria-label="Remove ${x(name)}">✕</button>`:''}
     </div>`;
@@ -704,17 +704,34 @@ function renderPlayers(){
   document.getElementById('player-grid').innerHTML=html;
 }
 
+let _editCancelled=false;
+
 window.startEdit=function(id){
   if(!isEditor) return;
   const inp=document.getElementById('p-inp-'+id);
+  inp.dataset.original=inp.value;
+  _editCancelled=false;
   inp.removeAttribute('readonly');
   inp.focus();
   inp.select();
 };
 
+window.handleEditKey=function(e,id){
+  if(e.key==='Enter') e.target.blur();
+  if(e.key==='Escape'){
+    e.preventDefault();
+    e.stopPropagation();
+    _editCancelled=true;
+    const inp=document.getElementById('p-inp-'+id);
+    inp.value=inp.dataset.original||state.players[id];
+    inp.blur();
+  }
+};
+
 window.finishEdit=function(id,val){
   const inp=document.getElementById('p-inp-'+id);
   if(inp) inp.setAttribute('readonly','');
+  if(_editCancelled){ _editCancelled=false; return; }
   if(!isEditor) return;
   const v=val.trim();
   if(!v||v===state.players[id]) return;
@@ -732,7 +749,8 @@ window.addPlayer=function(){
   state.players[id]=name;
   push(`players/${id}`,name);
   renderAll();
-  toast('Player added');
+  showPage('players');
+  setTimeout(()=>startEdit(id),50);
 };
 
 window.removePlayer=async function(id){

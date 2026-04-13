@@ -58,13 +58,14 @@ main{max-width:960px;margin:0 auto;padding:20px 14px 48px;}
 .lb-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .lb-table{width:100%;border-collapse:collapse;min-width:480px;}
 .lb-table th{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:0 8px 10px;text-align:center;white-space:nowrap;}
-.lb-table th:nth-child(1){width:28px;text-align:left;padding-left:0;}
+.lb-table th:nth-child(1){width:32px;text-align:center;padding-left:0;}
 .lb-table th:nth-child(2){text-align:left;}
 .lb-table td{padding:0 8px;text-align:center;font-size:15px;border-top:1px solid var(--border);height:48px;}
-.lb-table td:nth-child(1){text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:800;padding-left:0;}
+.lb-table td:nth-child(1){text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:500;padding-left:0;line-height:24px;}
 .lb-table td:nth-child(2){text-align:left;font-size:15px;font-weight:500;min-width:130px;}
 .lb-table tr:hover td{background:var(--surf2);}
-.r1{color:var(--gold)!important;}.r2{color:var(--silver)!important;}.r3{color:var(--bronze)!important;}
+.rank-circle{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:#fff;font-size:13px;font-weight:600;}
+.r1{background:var(--gold);}.r2{background:var(--silver);}.r3{background:var(--bronze);}
 .pts-big{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--accent);}
 .pill{display:inline-flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:2px 6px;border-radius:20px;white-space:nowrap;}
 .p-w  {background:rgba(15,153,96,0.10);color:var(--win);}
@@ -149,8 +150,6 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--accent);}
 /* ── Players ── */
 .player-grid{display:flex;flex-direction:column;gap:6px;max-width:480px;}
 .player-card{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:11px;}
-.p-av{width:36px;height:36px;border-radius:50%;background:var(--surf2);border:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
-.p-av img{width:100%;height:100%;object-fit:cover;}
 .p-inp{font-size:15px;font-weight:500;background:none;border:none;color:var(--text);font-family:'Barlow',sans-serif;width:100%;padding:0;min-width:0;}
 .p-inp[readonly]{cursor:default;}
 body.is-editor .p-inp[readonly]{cursor:pointer;}
@@ -345,7 +344,6 @@ let mCtx    = null;
 let isEditor = false;
 
 function playerIds(){ return Object.keys(state.players).map(Number).sort((a,b)=>a-b); }
-function avatarUrl(name){ return `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${encodeURIComponent(name)}`; }
 function nextPlayerId(){ const ids=playerIds(); return ids.length===0 ? 0 : Math.max(...ids)+1; }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -495,8 +493,8 @@ function renderStandings(){
     <th scope="col">Pts</th>
   </tr></thead><tbody>
   ${stats.map((s,r)=>`<tr>
-    <td class="${r<3?['r1','r2','r3'][r]:''}">${r+1}</td>
-    <td><div style="display:flex;align-items:center;gap:8px"><div class="p-av" style="width:28px;height:28px" aria-hidden="true"><img src="${avatarUrl(s.name)}" alt=""></div>${x(s.name)}</div></td>
+    <td>${r<3?`<span class="rank-circle ${['r1','r2','r3'][r]}">${r+1}</span>`:r+1}</td>
+    <td>${x(s.name)}</td>
     <td style="color:var(--muted)">${s.gp}</td>
     <td>${s.w  >0?`<span class="pill p-w">${s.w}</span>`  :s.gp>0?`<span style="color:var(--muted)">0</span>`:''}</td>
     <td>${s.otw>0?`<span class="pill p-otw">${s.otw}</span>`:s.gp>0?`<span style="color:var(--muted)">0</span>`:''}</td>
@@ -684,7 +682,6 @@ function renderPlayers(){
   let html=ids.map(id=>{
     const name=state.players[id];
     return `<div class="player-card">
-      <div class="p-av" aria-hidden="true" ${isEditor?`style="cursor:pointer" onclick="startEdit(${id})"`:''}><img src="${avatarUrl(name)}" alt=""></div>
       <input class="p-inp" id="p-inp-${id}" value="${x(name)}" maxlength="24" readonly
         aria-label="Player name: ${x(name)}"
         ${isEditor?'':'tabindex="-1"'}
